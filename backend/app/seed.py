@@ -20,19 +20,19 @@ EQUIPMENTS = {
     "L3": [("F301", "封箱机"), ("L302", "贴标机")],
 }
 
-# category, code, name
+# (category, code, name, is_failure)
 REASONS = [
-    ("设备故障", "EQ_MECH", "机械故障"),
-    ("设备故障", "EQ_ELEC", "电气/控制系统故障"),
-    ("设备故障", "EQ_TOOL", "刀具/模具磨损"),
-    ("换型换模", "CHANGEOVER", "换型换模"),
-    ("换型换模", "ADJUST", "首件调试/参数调整"),
-    ("物料问题", "WAIT_MAT", "待料/缺料"),
-    ("物料问题", "MAT_QC", "来料不良"),
-    ("质量问题", "QUALITY", "质量异常停机"),
-    ("人员因素", "OPERATOR", "人员操作/交接班"),
-    ("公用工程", "UTILITY", "水电气中断"),
-    ("其他", "OTHER", "其他"),
+    ("设备故障", "EQ_MECH", "机械故障", True),
+    ("设备故障", "EQ_ELEC", "电气/控制系统故障", True),
+    ("设备故障", "EQ_TOOL", "刀具/模具磨损", True),
+    ("换型换模", "CHANGEOVER", "换型换模", False),
+    ("换型换模", "ADJUST", "首件调试/参数调整", False),
+    ("物料问题", "WAIT_MAT", "待料/缺料", False),
+    ("物料问题", "MAT_QC", "来料不良", False),
+    ("质量问题", "QUALITY", "质量异常停机", False),
+    ("人员因素", "OPERATOR", "人员操作/交接班", False),
+    ("公用工程", "UTILITY", "水电气中断", False),
+    ("其他", "OTHER", "其他", False),
 ]
 
 SHIFT_DAY = "白班"
@@ -62,9 +62,13 @@ def seed() -> None:
         db.flush()
 
         reason_map: dict[str, models.DowntimeReason] = {}
-        for idx, (category, code, name) in enumerate(REASONS):
+        for idx, (category, code, name, is_failure) in enumerate(REASONS):
             reason = models.DowntimeReason(
-                code=code, name=name, category=category, sort_order=idx
+                code=code,
+                name=name,
+                category=category,
+                is_failure=is_failure,
+                sort_order=idx,
             )
             db.add(reason)
             reason_map[code] = reason

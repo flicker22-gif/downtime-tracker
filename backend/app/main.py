@@ -5,13 +5,15 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .config import settings
 from .database import Base, engine
-from .routers import analysis, events, meta, stats
+from .migrations import ensure_schema
+from .routers import analysis, events, meta, reliability, stats
 from .seed import seed
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     Base.metadata.create_all(bind=engine)
+    ensure_schema()
     if settings.seed_on_startup:
         seed()
     yield
@@ -31,6 +33,7 @@ app.include_router(meta.router)
 app.include_router(events.router)
 app.include_router(analysis.router)
 app.include_router(stats.router)
+app.include_router(reliability.router)
 
 
 @app.get("/api/health", tags=["health"])

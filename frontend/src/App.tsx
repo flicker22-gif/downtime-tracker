@@ -1,17 +1,18 @@
 import { Layout, Menu } from "antd";
-import { DashboardOutlined, UnorderedListOutlined } from "@ant-design/icons";
+import { DashboardOutlined, UnorderedListOutlined, ToolOutlined } from "@ant-design/icons";
 import { Link, Route, Routes, useLocation } from "react-router-dom";
 import EventListPage from "./pages/EventListPage";
 import EventDetailPage from "./pages/EventDetailPage";
 import AnalysisPage from "./pages/AnalysisPage";
+import ReliabilityPage from "./pages/ReliabilityPage";
 
 const { Header, Sider, Content } = Layout;
 
 export default function App() {
   const location = useLocation();
-  const selectedKey = location.pathname.startsWith("/analysis")
-    ? "analysis"
-    : "events";
+  let selectedKey = "events";
+  if (location.pathname.startsWith("/analysis")) selectedKey = "analysis";
+  if (location.pathname.startsWith("/reliability")) selectedKey = "reliability";
 
   return (
     <Layout style={{ minHeight: "100vh" }}>
@@ -43,6 +44,11 @@ export default function App() {
               icon: <DashboardOutlined />,
               label: <Link to="/analysis">原因分析</Link>,
             },
+            {
+              key: "reliability",
+              icon: <ToolOutlined />,
+              label: <Link to="/reliability">设备可靠性</Link>,
+            },
           ]}
         />
       </Sider>
@@ -63,6 +69,7 @@ export default function App() {
             <Route path="/" element={<EventListPage />} />
             <Route path="/events/:id" element={<EventDetailPage />} />
             <Route path="/analysis" element={<AnalysisPage />} />
+            <Route path="/reliability" element={<ReliabilityPage />} />
           </Routes>
         </Content>
       </Layout>

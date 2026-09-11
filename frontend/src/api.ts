@@ -11,6 +11,7 @@ import type {
   Reason,
   CorrectiveAction,
   ActionStatus,
+  ReliabilityResponse,
 } from "./types";
 
 const client = axios.create({
@@ -88,5 +89,15 @@ export const api = {
   pareto: (params: { date_from?: string; date_to?: string; line_id?: number; top?: number }) =>
     client
       .get<ParetoResponse>("/analytics/pareto", { params })
+      .then((r) => r.data),
+  reliability: (params: {
+    dimension: "equipment" | "line";
+    date_from?: string;
+    date_to?: string;
+    line_id?: number;
+    all_data?: boolean;
+  }) =>
+    client
+      .get<ReliabilityResponse>("/analytics/reliability", { params })
       .then((r) => r.data),
 };

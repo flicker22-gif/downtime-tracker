@@ -60,6 +60,9 @@ class DowntimeReason(Base):
     code: Mapped[str] = mapped_column(String(32), unique=True)
     name: Mapped[str] = mapped_column(String(64))
     category: Mapped[str] = mapped_column(String(32), index=True)
+    # 是否计入设备可靠性指标（MTTR/MTBF）：设备故障类原因为 True，
+    # 换型换模、待料等计划性/外部原因不计为故障
+    is_failure: Mapped[bool] = mapped_column(Boolean, default=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     sort_order: Mapped[int] = mapped_column(Integer, default=0)
 

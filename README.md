@@ -13,6 +13,11 @@
 3. **根因分析**：班组长在事件详情页填写问题描述 + 5 Whys + 根因结论。
 4. **改善措施跟踪**：为事件挂措施（内容/责任人/计划完成日期/状态），支持状态流转、编辑、删除。
 5. **原因分析（帕累托）**：按停机原因聚合次数/时长，按次数降序并给出累计占比，识别累计 ≤ 80% 的“关键少数”原因。
+6. **设备可靠性（MTTR / MTBF）**：按设备或产线维度自动计算平均修复时间、平均无故障时间与可用度，支持时间区间（近 7/30/90 天/全部）与产线筛选。
+   - 仅「设备故障」类原因（机械/电气/刀具模具，原因表 `is_failure` 标志）计入可靠性指标；换型、待料、质量等不计为故障
+   - MTTR = 故障停机总时长 ÷ 故障次数
+   - MTBF =（运行时长基数 − 故障停机时长）÷ 故障次数；运行时长基数取所选区间（设备 7×24，产线按产线内设备数叠加）
+   - 可用度 =（运行时长基数 − 故障停机时长）÷ 运行时长基数；无故障设备不显示 MTTR/MTBF、可用度 100%
 
 事件状态流转：`待分析 open → 分析/改善中 analyzing → 已关闭 closed`（首次保存 5 Whys 自动转入 analyzing）。
 
@@ -77,6 +82,7 @@ npm run dev
 | PUT | `/api/events/{id}/analysis` | 提交/更新 5 Whys |
 | POST/PATCH/DELETE | `/api/events/{id}/actions[/{aid}]` | 改善措施 CRUD |
 | GET | `/api/analytics/pareto` | 原因聚合帕累托数据 |
+| GET | `/api/analytics/reliability` | MTTR/MTBF/可用度（`dimension=equipment|line`、`line_id`、`date_from/to`、`all_data`） |
 
 ## 说明 / 后续可扩展
 

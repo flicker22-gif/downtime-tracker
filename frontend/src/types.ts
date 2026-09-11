@@ -16,6 +16,7 @@ export interface Reason {
   code: string;
   name: string;
   category: string;
+  is_failure?: boolean;
 }
 
 export type EventStatus = "open" | "analyzing" | "closed";
@@ -107,6 +108,28 @@ export interface ParetoResponse {
   total_count: number;
   total_duration_min: number;
   items: ParetoItem[];
+}
+
+export interface ReliabilityRow {
+  id: number;
+  code: string;
+  name: string;
+  line_id?: number | null;
+  line_name?: string | null;
+  equipment_count: number;
+  failure_count: number;
+  failure_downtime_min: number;
+  observation_min: number;
+  mttr_min: number | null;
+  mtbf_min: number | null;
+  availability_pct: number | null;
+}
+
+export interface ReliabilityResponse {
+  dimension: "equipment" | "line";
+  date_from: string;
+  date_to: string;
+  rows: ReliabilityRow[];
 }
 
 export const STATUS_META: Record<

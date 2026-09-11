@@ -28,6 +28,7 @@ class Reason(BaseModel):
     code: str
     name: str
     category: str
+    is_failure: bool = False
 
 
 # ---------- 5 Whys ----------
@@ -176,3 +177,28 @@ class ParetoResponse(BaseModel):
     total_count: int
     total_duration_min: int
     items: list[ParetoItem]
+
+
+# ---------- 可靠性指标（MTTR / MTBF） ----------
+
+
+class ReliabilityRow(BaseModel):
+    id: int
+    code: str
+    name: str
+    line_id: int | None = None       # 设备维度时所属产线
+    line_name: str | None = None
+    equipment_count: int = 1         # 产线维度时纳入统计的设备数
+    failure_count: int               # 故障次数（仅计 is_failure 原因）
+    failure_downtime_min: int        # 故障停机总时长
+    observation_min: int             # 统计区间内的运行时长基数（分钟）
+    mttr_min: float | None = None    # 平均修复时间
+    mtbf_min: float | None = None    # 平均无故障时间
+    availability_pct: float | None = None  # 可用度 %
+
+
+class ReliabilityResponse(BaseModel):
+    dimension: str                   # equipment | line
+    date_from: datetime
+    date_to: datetime
+    rows: list[ReliabilityRow]
