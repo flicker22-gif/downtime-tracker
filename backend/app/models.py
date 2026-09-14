@@ -26,6 +26,16 @@ ACTION_OPEN = "open"
 ACTION_DOING = "doing"
 ACTION_DONE = "done"
 
+# 导入批次状态
+IMPORT_PRECHECKED = "prechecked"  # 已预检，待确认
+IMPORT_COMMITTED = "committed"    # 已确认写入
+
+# 导入行预检状态
+ROW_OK = "ok"              # 可导入
+ROW_DUPLICATE = "duplicate"  # 重复（内容一致，导入时跳过，幂等）
+ROW_CONFLICT = "conflict"    # 冲突（外部事件号已存在但内容不一致）
+ROW_ERROR = "error"          # 需人工修正
+
 
 class ProductionLine(Base):
     __tablename__ = "production_line"
@@ -72,6 +82,8 @@ class DowntimeEvent(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     event_no: Mapped[str] = mapped_column(String(32), unique=True, index=True)
+    # 设备日志系统的外部事件号：用于批量导入幂等去重；历史数据可空
+    external_event_no: Mapped[str | None] = mapped_column(String(64), unique=True, nullable=True)
     line_id: Mapped[int] = mapped_column(ForeignKey("production_line.id"))
     equipment_id: Mapped[int] = mapped_column(ForeignKey("equipment.id"))
     reason_id: Mapped[int] = mapped_column(ForeignKey("downtime_reason.id"))
@@ -137,3 +149,49 @@ class CorrectiveAction(Base):
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     event: Mapped[DowntimeEvent] = relationship(back_populates="actions")
+
+
+class ImportBatch(Base):
+    """CSV 批量导入批次。file_hash 唯一：同一文件内容重复上传命中同一批次（幂等）。"""
+
+    __tablename__ = "import_batch"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    file_hash: Mapped[str] = mapped_column(String(64), unique=True, index=True)  # sha256
+    filename: Mapped[str] = mapped_column(String(255))
+    status: Mapped[str] = mapped_column(String(16), default=IMPORT_PRECHECKED, index=True)
+    total_rows: Mapped[int] = mapped_column(Integer, default=0)
+    ok_rows: Mapped[int] = mapped_column(Integer, default=0)
+    duplicate_rows: Mapped[int] = mapped_column(Integer, default=0)
+    conflict_rows: Mapped[int] = mapped_column(Integer, default=0)
+    error_rows: Mapped[int] = mapped_column(Integer, default=0)
+    imported_rows: Mapped[int] = mapped_column(Integer, default=0)  # 确认时实际写入事件数
+    skipped_rows: Mapped[int] = mapped_column(Integer, default=0)   # 确认时跳过的重复行数
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    committed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    rows: Mapped[list["ImportRow"]] = relationship(
+        back_populates="batch", cascade="all, delete-orphan", order_by="ImportRow.row_no"
+    )
+
+
+class ImportRow(Base):
+    """导入暂存行：预检结果落库，确认导入前不进入 downtime_event，统计不可见。"""
+
+    __tablename__ = "import_row"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    batch_id: Mapped[int] = mapped_column(
+        ForeignKey("import_batch.id", ondelete="CASCADE"), index=True
+    )
+    row_no: Mapped[int] = mapped_column(Integer)  # 数据行号（从 1 开始，不含表头）
+    external_event_no: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
+    status: Mapped[str] = mapped_column(String(16))  # ok / duplicate / conflict / error
+    errors: Mapped[str] = mapped_column(Text, default="")   # JSON 数组：错误/冲突说明
+    payload: Mapped[str] = mapped_column(Text)              # JSON：规范化后的行数据
+    event_id: Mapped[int | None] = mapped_column(
+        ForeignKey("downtime_event.id"), nullable=True
+    )  # 确认导入后回填
+
+    batch: Mapped[ImportBatch] = relationship(back_populates="rows")
+    event: Mapped["DowntimeEvent | None"] = relationship()

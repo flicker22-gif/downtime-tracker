@@ -6,6 +6,10 @@ import type {
   EventListResponse,
   EventStatus,
   FiveWhy,
+  ImportBatch,
+  ImportConfirmResponse,
+  ImportRowListResponse,
+  ImportRowStatus,
   Line,
   ParetoResponse,
   Reason,
@@ -100,4 +104,32 @@ export const api = {
     client
       .get<ReliabilityResponse>("/analytics/reliability", { params })
       .then((r) => r.data),
+
+  // CSV 批量导入
+  precheckImport: (file: File) => {
+    const fd = new FormData();
+    fd.append("file", file);
+    return client
+      .post<ImportBatch>("/imports/precheck", fd, { timeout: 120000 })
+      .then((r) => r.data);
+  },
+  getImportBatch: (id: number) =>
+    client.get<ImportBatch>(`/imports/${id}`).then((r) => r.data),
+  listImportRows: (
+    id: number,
+    params: { status?: ImportRowStatus; page?: number; page_size?: number }
+  ) =>
+    client
+      .get<ImportRowListResponse>(`/imports/${id}/rows`, { params })
+      .then((r) => r.data),
+  confirmImport: (id: number) =>
+    client
+      .post<ImportConfirmResponse>(`/imports/${id}/confirm`, null, {
+        timeout: 120000,
+      })
+      .then((r) => r.data),
+  downloadImportErrors: (id: number) =>
+    client
+      .get(`/imports/${id}/errors.csv`, { responseType: "blob" })
+      .then((r) => r.data as Blob),
 };

@@ -13,6 +13,20 @@ _PENDING_COLUMNS: dict[str, list[tuple[str, str]]] = {
     "downtime_reason": [
         ("is_failure", "BOOLEAN NOT NULL DEFAULT FALSE"),
     ],
+    "downtime_event": [
+        ("external_event_no", "VARCHAR(64)"),
+    ],
+}
+
+# 表名 -> [(索引名, 建索引DDL)]：新列上的唯一约束（PG 唯一索引允许多个 NULL）
+_PENDING_INDEXES: dict[str, list[tuple[str, str]]] = {
+    "downtime_event": [
+        (
+            "uq_downtime_event_external_event_no",
+            "CREATE UNIQUE INDEX IF NOT EXISTS uq_downtime_event_external_event_no "
+            "ON downtime_event (external_event_no)",
+        ),
+    ],
 }
 
 
@@ -37,3 +51,10 @@ def ensure_schema() -> None:
                         "WHERE category = '设备故障'"
                     )
                 )
+        for table, indexes in _PENDING_INDEXES.items():
+            if table not in existing_tables:
+                continue
+            existing_indexes = {ix["name"] for ix in inspector.get_indexes(table)}
+            for name, ddl in indexes:
+                if name not in existing_indexes:
+                    conn.execute(text(ddl))

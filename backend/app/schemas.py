@@ -202,3 +202,42 @@ class ReliabilityResponse(BaseModel):
     date_from: datetime
     date_to: datetime
     rows: list[ReliabilityRow]
+
+
+# ---------- CSV 批量导入 ----------
+
+
+class ImportRowOut(BaseModel):
+    row_no: int
+    status: str                      # ok / duplicate / conflict / error
+    external_event_no: str | None = None
+    errors: list[str] = []
+    data: dict = {}                  # 规范化后的行数据（展示用）
+    event_no: str | None = None      # 确认导入后生成的事件编号
+
+
+class ImportRowListResponse(BaseModel):
+    total: int
+    items: list[ImportRowOut]
+
+
+class ImportBatchOut(BaseModel):
+    id: int
+    filename: str
+    status: str                      # prechecked / committed
+    total_rows: int
+    ok_rows: int
+    duplicate_rows: int
+    conflict_rows: int
+    error_rows: int
+    imported_rows: int
+    skipped_rows: int
+    created_at: datetime
+    committed_at: datetime | None = None
+    deduplicated: bool = False       # 本次上传命中同内容的历史批次
+
+
+class ImportConfirmResponse(BaseModel):
+    batch: ImportBatchOut
+    imported: int
+    skipped: int

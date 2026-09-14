@@ -6,24 +6,11 @@ from sqlalchemy.orm import Session, selectinload
 
 from .. import models, schemas
 from ..database import get_db
+from ..numbering import lock_event_numbering, next_event_nos
 
 router = APIRouter(prefix="/api/events", tags=["events"])
 
 VALID_STATUS = {models.STATUS_OPEN, models.STATUS_ANALYZING, models.STATUS_CLOSED}
-
-
-def _next_event_no(db: Session) -> str:
-    """事件编号：DT + yyyymmdd + 当日 3 位序号，如 DT20260910-007"""
-    today = datetime.now()
-    prefix = f"DT{today:%Y%m%d}-"
-    last = db.scalar(
-        select(models.DowntimeEvent.event_no)
-        .where(models.DowntimeEvent.event_no.like(prefix + "%"))
-        .order_by(models.DowntimeEvent.event_no.desc())
-        .limit(1)
-    )
-    seq = int(last.split("-")[1]) + 1 if last else 1
-    return f"{prefix}{seq:03d}"
 
 
 def _to_list_item(e: models.DowntimeEvent) -> schemas.EventListItem:
@@ -127,8 +114,10 @@ def create_event(payload: schemas.EventCreate, db: Session = Depends(get_db)):
     if not db.get(models.DowntimeReason, payload.reason_id):
         raise HTTPException(400, "停机原因不存在")
 
+    # 与批量导入共用编号锁，避免并发下事件编号撞号
+    lock_event_numbering(db)
     event = models.DowntimeEvent(
-        event_no=_next_event_no(db),
+        event_no=next_event_nos(db, 1)[0],
         status=models.STATUS_OPEN,
         **payload.model_dump(),
     )

@@ -149,3 +149,65 @@ export const ACTION_STATUS_META: Record<
   doing: { label: "进行中", color: "processing" },
   done: { label: "已完成", color: "success" },
 };
+
+// ---------- CSV 批量导入 ----------
+
+export type ImportRowStatus = "ok" | "duplicate" | "conflict" | "error";
+
+export interface ImportRow {
+  row_no: number;
+  status: ImportRowStatus;
+  external_event_no?: string | null;
+  errors: string[];
+  data: {
+    external_event_no?: string | null;
+    line_code?: string;
+    equipment_code?: string;
+    reason_code?: string;
+    start_time?: string | null;
+    end_time?: string | null;
+    duration_min?: number | null;
+    shift?: string;
+    reporter?: string;
+    product?: string | null;
+    note?: string | null;
+  };
+  event_no?: string | null;
+}
+
+export interface ImportRowListResponse {
+  total: number;
+  items: ImportRow[];
+}
+
+export interface ImportBatch {
+  id: number;
+  filename: string;
+  status: "prechecked" | "committed";
+  total_rows: number;
+  ok_rows: number;
+  duplicate_rows: number;
+  conflict_rows: number;
+  error_rows: number;
+  imported_rows: number;
+  skipped_rows: number;
+  created_at: string;
+  committed_at?: string | null;
+  deduplicated: boolean;
+}
+
+export interface ImportConfirmResponse {
+  batch: ImportBatch;
+  imported: number;
+  skipped: number;
+}
+
+export const IMPORT_ROW_STATUS_META: Record<
+  ImportRowStatus,
+  { label: string; color: string }
+> = {
+  ok: { label: "可导入", color: "success" },
+  duplicate: { label: "重复·跳过", color: "default" },
+  conflict: { label: "冲突", color: "warning" },
+  error: { label: "需修正", color: "error" },
+};

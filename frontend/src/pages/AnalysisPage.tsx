@@ -16,7 +16,7 @@ import {
 import type { ColumnsType } from "antd/es/table";
 import dayjs from "dayjs";
 import { api } from "../api";
-import ParetoChart from "../components/ParetoChart";
+import ParetoChart, { vitalCount } from "../components/ParetoChart";
 import { Line, ParetoItem } from "../types";
 
 const { Title, Text } = Typography;
@@ -155,8 +155,8 @@ export default function AnalysisPage() {
         <Col span={8}>
           <Card size="small">
             <Statistic
-              title="关键原因（累计≤80%）"
-              value={data.filter((d) => d.cum_pct <= 80).length}
+              title="关键原因（至累计 80%）"
+              value={vitalCount(data)}
               suffix="项"
             />
           </Card>
@@ -165,7 +165,7 @@ export default function AnalysisPage() {
 
       <Card
         size="small"
-        title="原因排序（蓝条为关键少数，累计占比 ≤ 80%）"
+        title="原因排序（蓝条为关键少数，至累计占比首次达到 80%）"
         style={{ marginBottom: 12 }}
         loading={loading}
       >

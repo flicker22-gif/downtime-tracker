@@ -8,6 +8,8 @@ class Settings(BaseSettings):
     database_url: str = "postgresql+psycopg://downtime:downtime@localhost:5432/downtime"
     cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173"
     seed_on_startup: bool = True
+    # CSV 导入：无时区的时间按该时区解释（设备日志导出为本地时间）
+    import_timezone: str = "Asia/Shanghai"
 
 
 settings = Settings()

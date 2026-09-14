@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from .config import settings
 from .database import Base, engine
 from .migrations import ensure_schema
-from .routers import analysis, events, meta, reliability, stats
+from .routers import analysis, events, imports, meta, reliability, stats
 from .seed import seed
 
 
@@ -31,6 +31,7 @@ app.add_middleware(
 
 app.include_router(meta.router)
 app.include_router(events.router)
+app.include_router(imports.router)
 app.include_router(analysis.router)
 app.include_router(stats.router)
 app.include_router(reliability.router)

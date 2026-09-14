@@ -18,8 +18,16 @@
    - MTTR = 故障停机总时长 ÷ 故障次数
    - MTBF =（运行时长基数 − 故障停机时长）÷ 故障次数；运行时长基数取所选区间（设备 7×24，产线按产线内设备数叠加）
    - 可用度 =（运行时长基数 − 故障停机时长）÷ 运行时长基数；无故障设备不显示 MTTR/MTBF、可用度 100%
+7. **CSV 批量导入**：设备日志整包上传 → 逐行预检（产线/设备归属、原因编码、时间顺序、班次、时长）→ 标注可导入/重复/冲突/需修正 → 错误行下载修正后重新预检 → 确认导入。
+   - 幂等：同一文件内容重复上传命中同一批次；外部事件号（`external_event_no`）跨文件唯一，内容一致判重复跳过、不一致判冲突；无外部号的历史数据照常登记
+   - 确认在单事务内批量写入并保持事件编号唯一，任一不可修正错误整体回滚；预检数据落暂存表，统计只统计已提交行
+   - 编码兼容 UTF-8（含 BOM）/ GBK；无时区时间按 `DT_IMPORT_TIMEZONE`（默认 Asia/Shanghai）解释
 
 事件状态流转：`待分析 open → 分析/改善中 analyzing → 已关闭 closed`（首次保存 5 Whys 自动转入 analyzing）。
+
+### CSV 导入格式
+
+表头支持中英文（如 `line_code`/`产线编码`），必需列：产线编码、设备编码、原因编码、开始时间、班次（白班/夜班）、操作工；可选列：外部事件号、结束时间、时长(分钟)、工单/产品、备注。时间支持 `YYYY-MM-DD HH:MM[:SS]`、`YYYY/M/D HH:MM` 与 ISO8601（可带时区偏移）。单文件 ≤ 10000 行、≤ 20MB，页面可下载模板。
 
 ## 目录
 
@@ -83,6 +91,10 @@ npm run dev
 | POST/PATCH/DELETE | `/api/events/{id}/actions[/{aid}]` | 改善措施 CRUD |
 | GET | `/api/analytics/pareto` | 原因聚合帕累托数据 |
 | GET | `/api/analytics/reliability` | MTTR/MTBF/可用度（`dimension=equipment|line`、`line_id`、`date_from/to`、`all_data`） |
+| POST | `/api/imports/precheck` | 上传 CSV 逐行预检（同内容文件幂等） |
+| GET | `/api/imports/{id}` `/api/imports/{id}/rows` | 批次摘要 / 逐行预检结果 |
+| GET | `/api/imports/{id}/errors.csv` | 下载需修正行（可直接改后重传） |
+| POST | `/api/imports/{id}/confirm` | 确认导入（事务内批量写入，错误整体回滚，重复确认幂等） |
 
 ## 说明 / 后续可扩展
 
